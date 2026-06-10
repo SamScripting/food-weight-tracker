@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Food & Weight Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: sans-serif; max-width: 960px; margin: 0 auto; padding: 1rem; background: #f5f5f5; color: #222; }
+
+    /* ── Nav ── */
+    nav { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    nav button { padding: 0.65rem 2rem; cursor: pointer; border: 1px solid #999; background: #fff; border-radius: 4px; font-size: 1rem; font-weight: 500; }
+    nav button.active { background: #333; color: #fff; border-color: #333; }
+
+    section { display: none; }
+    section.active { display: block; }
+
+    /* ── Form rows ── */
+    .form-area { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 1.25rem 0; width: 100%; }
+    .form-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 1rem; }
+    .form-msg { height: 1.6rem; line-height: 1.6rem; margin-top: 0.5rem; text-align: center; }
+    .divider { width: 1px; background: #ccc; align-self: stretch; margin: 0; }
+    .field { display: flex; flex-direction: column; }
+    label { display: block; margin-bottom: 0.25rem; font-weight: bold; font-size: 0.9rem; }
+
+    /* ── Inputs & buttons ── */
+    input, select { padding: 0.35rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; height: 2.1rem; }
+    button.btn { padding: 0.35rem 0.85rem; border: 1px solid #555; border-radius: 4px; cursor: pointer; background: #fff; font-size: 0.9rem; height: 2.1rem; }
+    button.btn-primary { background: #333; color: #fff; border-color: #333; }
+    button.btn-danger  { background: #c0392b; color: #fff; border-color: #c0392b; }
+    button.btn-small   { padding: 0.2rem 0.5rem; font-size: 0.8rem; height: auto; }
+    button.btn-icon    { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.1rem 0.3rem; line-height: 1; }
+    button.btn-icon:hover { opacity: 0.7; }
+
+    /* ── Inline messages ── */
+    .inline-msg { font-size: 0.85rem; height: 1.6rem; line-height: 1.6rem; padding: 0 0.5rem; border-radius: 4px; }
+    .inline-msg.ok  { background: #d4edda; color: #155724; }
+    .inline-msg.err { background: #f8d7da; color: #721c24; }
+
+    /* ── Tables ── */
+    .table-wrap { width: 100%; max-height: calc(100vh - 220px); overflow-y: auto; border-radius: 0 0 4px 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #e0e0e0; font-size: 0.9rem; }
+    th { background: #333; color: #fff; position: sticky; top: 0; z-index: 1; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f0f0f0; }
+
+    /* ── Totals bar ── */
+    .totals-bar { background: #fff; border-radius: 4px 4px 0 0; padding: 0.6rem 1rem; box-shadow: 0 -1px 3px rgba(0,0,0,0.06); display: flex; gap: 2rem; justify-content: center; border-bottom: 2px solid #e0e0e0; width: 100%; }
+    .totals-bar span { font-size: 0.95rem; }
+    .totals-bar strong { font-size: 1.1rem; }
+
+    /* ── Summary charts ── */
+    .chart-container { background: #fff; border-radius: 4px; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; width: 100%; }
+    .chart-range.active { background: #333; color: #fff; border-color: #333; }
+    #summary-tbody tr { cursor: pointer; }
+    #summary-tbody tr:hover td { background: #e8f0fe; }
+
+    /* ── Autocomplete ── */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-wrap input { width: 220px; }
+    #food-dropdown { position: absolute; top: 100%; left: 0; width: 220px; background: #fff; border: 1px solid #ccc; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+    #food-dropdown div { padding: 0.4rem 0.6rem; cursor: pointer; font-size: 0.95rem; }
+    #food-dropdown div:hover, #food-dropdown div.active { background: #333; color: #fff; }
+
+    input.err { border-color: #c0392b; background: #fff0f0; }
+    .date-display { font-size: 1.05rem; font-weight: bold; white-space: nowrap; line-height: 2.1rem; height: 2.1rem; display: flex; align-items: center; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <button class="active" onclick="showTab('log')">Daily Log</button>
+  <button onclick="showTab('summary')">Summary</button>
+  <button onclick="showTab('foods')">Food Database</button>
+</nav>
+
+<!-- ── DAILY LOG ── -->
+<section id="tab-log" class="active">
+  <div class="form-area">
+    <div class="form-row">
+      <div class="field">
+        <label for="log-date">Date</label>
+        <input type="date" id="log-date" style="height:2.1rem; font-size:0.85rem;"
+               onchange="loadDay(this.value)" onclick="this.showPicker()">
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label for="log-weight">Weight (lbs)</label>
+        <input type="number" id="log-weight" step="0.1" min="0" style="width:110px" onblur="autoSaveWeight()">
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>Food</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="food-search" placeholder="Type to search…" autocomplete="off"
+                 oninput="filterFoods()" onkeydown="foodKeydown(event)" onfocus="filterFoods()">
+          <div id="food-dropdown"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="log-servings">Servings</label>
+        <input type="number" id="log-servings" step="0.25" min="0.25" value="1" style="width:90px"
+               onkeydown="if(event.key==='Enter') addLogEntry()">
+      </div>
+      <button class="btn btn-primary" onclick="addLogEntry()">Add Food</button>
+    </div>
+    <div class="form-msg"><span id="log-food-msg" class="inline-msg"></span></div>
+  </div>
+
+  <div class="totals-bar" id="totals-bar" style="display:none">
+    <span>Calories: <strong id="tot-cal">—</strong></span>
+    <span>Protein: <strong id="tot-pro">—</strong> g</span>
+    <span>Weight: <strong id="tot-wt">—</strong> lbs</span>
+  </div>
+  <div class="table-wrap">
+    <table id="log-table">
+      <thead><tr><th>Food</th><th>Servings</th><th>Calories</th><th>Protein (g)</th><th></th></tr></thead>
+      <tbody id="log-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── SUMMARY ── -->
+<section id="tab-summary">
+  <div style="display:flex; justify-content:center; gap:0.5rem; padding:1rem 0 0.5rem;">
+    <button class="btn chart-range active" onclick="setChartRange(1, this)">1M</button>
+    <button class="btn chart-range" onclick="setChartRange(3, this)">3M</button>
+    <button class="btn chart-range" onclick="setChartRange(6, this)">6M</button>
+    <button class="btn chart-range" onclick="setChartRange(12, this)">1Y</button>
+    <button class="btn chart-range" onclick="setChartRange(0, this)">All</button>
+  </div>
+  <div class="chart-container">
+    <canvas id="wt-chart" height="80"></canvas>
+  </div>
+  <div class="chart-container">
+    <canvas id="cal-chart" height="80"></canvas>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Calories</th><th>Protein</th><th>Weight (lbs)</th></tr></thead>
+      <tbody id="summary-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── FOOD DATABASE ── -->
+<section id="tab-foods">
+  <div class="form-area">
+    <div class="form-row">
+      <div class="field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" style="width:180px"
+               onkeydown="if(event.key==='Enter') saveFood()">
+      </div>
+      <div class="field">
+        <label for="f-cal">Cal / Serving</label>
+        <input type="number" id="f-cal" step="1" min="0" style="width:110px"
+               onkeydown="if(event.key==='Enter') saveFood()">
+      </div>
+      <div class="field">
+        <label for="f-pro">Protein / Serving</label>
+        <input type="number" id="f-pro" step="1" min="0" style="width:130px"
+               onkeydown="if(event.key==='Enter') saveFood()">
+      </div>
+      <button class="btn btn-primary" onclick="saveFood()">Add Food</button>
+    </div>
+    <div class="form-msg"><span id="foods-msg" class="inline-msg"></span></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Cal/Serving</th><th>Protein/Serving</th><th></th></tr></thead>
+      <tbody id="foods-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
