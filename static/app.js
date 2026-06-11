@@ -321,7 +321,7 @@ function renderCharts() {
     data: {
       labels: monRows.map(r => formatDateDisplay(r.date)),
       datasets: [{
-        label: "Weight (lbs)",
+        label: "Weight",
         data: monRows.map(r => r.weight_lbs),
         borderColor: "#333",
         backgroundColor: "rgba(50,50,50,0.08)",
