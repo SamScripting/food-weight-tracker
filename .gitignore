@@ -1,3 +1,4 @@
 weight_tracker.db
 __pycache__/
 venv/
+data/
