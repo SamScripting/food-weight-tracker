@@ -332,8 +332,8 @@ function renderCharts() {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, title: { display: true, text: "Weekly Weight (lbs)" },
-        tooltip: { callbacks: { label: ctx => `Weight (lbs): ${parseFloat(ctx.parsed.y).toFixed(1)}` } }
+      plugins: { legend: { display: false }, title: { display: true, text: "Weekly Weight" },
+        tooltip: { callbacks: { label: ctx => `Weight: ${parseFloat(ctx.parsed.y).toFixed(1)}` } }
       },
       scales: { y: { beginAtZero: false } }
     }
