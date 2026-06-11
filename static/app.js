@@ -124,7 +124,7 @@ async function loadFoods() {
   const tbody = $("foods-tbody");
   tbody.innerHTML = allFoods.map(f => `
     <tr id="frow-${f.id}">
-      <td><input id="fname-${f.id}" value="${f.name}" style="width:250px"
+      <td><input id="fname-${f.id}" value="${f.name}" style="width:160px"
             onblur="autoSaveFood(${f.id})"></td>
       <td><input id="fcal-${f.id}"  value="${f.calories_per_serving}" type="number" style="width:80px"
             onblur="autoSaveFood(${f.id})"></td>
@@ -179,7 +179,7 @@ async function loadDay(date) {
     api("GET", `/api/weight?date=${currentDate}`)
   ]);
 
-  $("log-weight").value = weightData.weight_lbs ?? "";
+  $("log-weight").value = weightData.weight_lbs != null ? parseFloat(weightData.weight_lbs).toFixed(1) : "";
   renderLogTable(entries);
   updateTotalsBar(entries, weightData.weight_lbs);
 }
@@ -205,7 +205,7 @@ function updateTotalsBar(entries, weight) {
   const pro = entries.reduce((s, e) => s + e.total_protein, 0);
   $("tot-cal").textContent = Math.round(cal);
   $("tot-pro").textContent = Math.round(pro);
-  $("tot-wt").textContent  = weight ?? "—";
+  $("tot-wt").textContent  = weight != null ? parseFloat(weight).toFixed(1) : "—";
 }
 
 async function addLogEntry() {
@@ -223,6 +223,7 @@ async function addLogEntry() {
     $("log-servings").value = "1";
     selectedFoodId = null;
     loadDay();
+    $("food-search").focus();
   } catch(e) { showMsg("log-food-msg", e.message, true); }
 }
 
@@ -245,6 +246,7 @@ async function autoSaveServings(id, input) {
 async function autoSaveWeight() {
   const weight = parseFloat($("log-weight").value);
   if (isNaN(weight) || weight <= 0) return;
+  $("log-weight").value = weight.toFixed(1);
   try {
     await api("POST", "/api/weight", { date: currentDate, weight_lbs: weight });
     const entries = await api("GET", `/api/log?date=${currentDate}`);
@@ -296,7 +298,7 @@ async function loadSummary() {
       <td>${formatDateDisplay(r.date)}</td>
       <td>${r.total_calories ?? "—"}</td>
       <td>${r.total_protein != null ? Math.round(r.total_protein) : "—"}</td>
-      <td>${r.weight_lbs ?? "—"}</td>
+      <td>${r.weight_lbs != null ? parseFloat(r.weight_lbs).toFixed(1) : "—"}</td>
     </tr>`).join("");
 
   renderCharts();
@@ -330,7 +332,9 @@ function renderCharts() {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, title: { display: true, text: "Weekly Weight (lbs)" } },
+      plugins: { legend: { display: false }, title: { display: true, text: "Weekly Weight (lbs)" },
+        tooltip: { callbacks: { label: ctx => `Weight (lbs): ${parseFloat(ctx.parsed.y).toFixed(1)}` } }
+      },
       scales: { y: { beginAtZero: false } }
     }
   });
