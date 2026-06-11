@@ -7,3 +7,4 @@ services:
       - ./data:/app/data
     environment:
       - DB_PATH=/app/data/weight_tracker.db
+    restart: unless-stopped
