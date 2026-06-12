@@ -108,13 +108,13 @@ def add_log_entry():
     if not date or food_id is None or servings is None:
         return jsonify({"error": "date, food_id, and servings are required"}), 400
     with get_db() as conn:
-        exists = conn.execute(
-            "SELECT id FROM food_log WHERE date = ? AND food_id = ?", (date, food_id)
+        existing = conn.execute(
+            "SELECT id, servings FROM food_log WHERE date = ? AND food_id = ?", (date, food_id)
         ).fetchone()
-        if exists:
-            food = conn.execute("SELECT name FROM foods WHERE id = ?", (food_id,)).fetchone()
-            name = food["name"] if food else "That food"
-            return jsonify({"error": f'"{name}" is already logged for this date. Edit the servings directly in the table.'}), 409
+        if existing:
+            new_servings = existing["servings"] + servings
+            conn.execute("UPDATE food_log SET servings=? WHERE id=?", (new_servings, existing["id"]))
+            return jsonify({"id": existing["id"]}), 200
         cur = conn.execute(
             "INSERT INTO food_log (date, food_id, servings) VALUES (?, ?, ?)",
             (date, food_id, servings)
